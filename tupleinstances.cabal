@@ -1,0 +1,12 @@
+name:                tupleinstances
+version:             0.0
+synopsis:            Functor, Applicative and Monad for n-ary tuples.
+description:         Functor, Applicative and Monad for n-ary tuples.
+category:            Data
+license:             BSD3
+license-file:        LICENSE
+author:              Diego Echeverri
+maintainer:          diegoeche@gmail.com
+build-depends:       base
+build-type:          Simple
+
