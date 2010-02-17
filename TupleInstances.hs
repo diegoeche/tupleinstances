@@ -7,22 +7,22 @@ module Data.Tuple.Instances where
 import THMacros
 import Control.Applicative
 
-$(return $ map tupleNewType [2..15])
-
-$(return $ map unTn [2..15])
-
-$(return $ map functorTnInstance [2..15])
-
 class T a b | a -> b,  b -> a where
       unT   :: a -> b
       t     :: b -> a
 
-$(return $ map tupleTnInstance [2..15])
-
-$(return $ map appTnInstance [2..15])
+-- All the declarations
+$(return $ do
+         n <- [2..15]
+         f <- [tupleNewType,
+              unTn,
+              functorTnInstance,
+              tupleTnInstance,
+              appTnInstance]
+         return $ f n)
 
 instance (Show a) => Show (T3 a) where
-         show (T3 x) = "T3 " ++ show x 
+         show (T3 x) = "T3 " ++ show x
 
 -- example :: (Num a) => (a, a, a)
 example1 = (unT . fmap (+1) $ T3 (1,2,3))
