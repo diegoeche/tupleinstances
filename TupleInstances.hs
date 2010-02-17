@@ -2,6 +2,7 @@
              MultiParamTypeClasses, 
              FlexibleInstances,
              FunctionalDependencies #-}
+
 module Data.Tuple.Instances where
 
 import THMacros
@@ -20,9 +21,6 @@ $(return $ do
               tupleTnInstance,
               appTnInstance]
          return $ f n)
-
-instance (Show a) => Show (T3 a) where
-         show (T3 x) = "T3 " ++ show x
 
 -- example :: (Num a) => (a, a, a)
 example1 = (unT . fmap (+1) $ T3 (1,2,3))

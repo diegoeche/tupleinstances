@@ -38,8 +38,9 @@ tnConT = ConT . tn
 --- Creates a newtype of the form:
 --- newtype Tn a = Tn (a,...a)
 tupleNewType :: Int -> Dec
-tupleNewType n = NewtypeD [] name [mkName "a"] tuple []
-        where name = tn n
+tupleNewType n = NewtypeD [] name [mkName "a"] tuple deriv
+        where deriv = map mkName ["Show", "Eq", "Read", "Ord"]
+              name = tn n
               tuple = NormalC name [(NotStrict, naryTupleType n "a")]
 
 --- Creates a tuple type of the form (a,...a)
@@ -53,8 +54,10 @@ unTn n = FunD unTname [def]
      where def = Clause [tn n `ConP` [var "x"]] (NormalB $ var "x") []
            unTname = mkName $ "unT" ++ show n
 
+tnTypeClass s = (AppT $ con s) . tnConT
+
 functorTnInstance :: Int -> Dec
-functorTnInstance n = InstanceD [] (con "Functor" `AppT` tnConT n) [fmapN]
+functorTnInstance n = InstanceD [] (tnTypeClass "Functor" n) [fmapN]
           where fmapN = mkName "fmap" `FunD` [def]
                 def = Clause [var "f", tuplePattern] (NormalB body) []
                 vars = ['a' : show x | x <- [1..n]]
@@ -71,6 +74,6 @@ tupleTnInstance n = InstanceD [] type' [t, unT]
 
 appTnInstance :: Int -> Dec
 appTnInstance n = InstanceD [] type' [pureN]
-              where type' = con "Applicative" `AppT` tnConT n
+              where type' = tnTypeClass "Applicative" n
                     pureN = mkName "pure" `FunD` [Clause [var "a"] (NormalB body) []]
                     body  = ConE (tn n) `AppE` (TupE . replicate n $ var "a")
