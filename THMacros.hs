@@ -3,6 +3,8 @@ module THMacros where
 
 import Language.Haskell.TH.Syntax
 
+-- Helpful class to create variables of the different syntax
+-- elements
 class Var a where
       var :: String -> a
 
@@ -15,8 +17,11 @@ instance Var Pat where
 instance Var Type where
          var = VarT . mkName
 
--- class Constructor a where
---       con :: String -> a
+class Constructor a where
+       con :: String -> a
+
+instance Constructor Type where
+       con = ConT . mkName
 
 -- instance Constructor Exp where
 --          con = ConE . mkName
@@ -27,6 +32,8 @@ instance Var Type where
 -- Creates the type name Tn
 tn :: Int -> Name
 tn = mkName . ('T':) . show
+
+tnConT = ConT . tn
 
 --- Creates a newtype of the form:
 --- newtype Tn a = Tn (a,...a)
@@ -46,10 +53,24 @@ unTn n = FunD unTname [def]
      where def = Clause [tn n `ConP` [var "x"]] (NormalB $ var "x") []
            unTname = mkName $ "unT" ++ show n
 
-functorTn :: Int -> Dec
-functorTn n = InstanceD [] ((ConT $ mkName "Functor") `AppT` (ConT $ tn n)) [fmapN]
-          where fmapN =  mkName "fmap" `FunD` [def]
+functorTnInstance :: Int -> Dec
+functorTnInstance n = InstanceD [] (con "Functor" `AppT` tnConT n) [fmapN]
+          where fmapN = mkName "fmap" `FunD` [def]
                 def = Clause [var "f", tuplePattern] (NormalB body) []
                 vars = ['a' : show x | x <- [1..n]]
                 body = ConE (tn n) `AppE` (TupE $ map ((var "f" `AppE`) . var) vars)
                 tuplePattern = tn n `ConP` [TupP $ map var vars]
+
+tupleTnInstance :: Int -> Dec
+tupleTnInstance n = InstanceD [] type' [t, unT]
+                where type' = con "T" `AppT` ta `AppT` naryTupleType n "a"
+                            where ta = tnConT n `AppT` var "a"
+                      clause body = Clause [] (NormalB body) []
+                      t   = mkName "t"   `FunD` [clause $ ConE (tn n)]
+                      unT = mkName "unT" `FunD` [clause . var $ "unT" ++ show n]
+
+appTnInstance :: Int -> Dec
+appTnInstance n = InstanceD [] type' [pureN]
+              where type' = con "Applicative" `AppT` tnConT n
+                    pureN = mkName "pure" `FunD` [Clause [var "a"] (NormalB body) []]
+                    body  = ConE (tn n) `AppE` (TupE . replicate n $ var "a")
