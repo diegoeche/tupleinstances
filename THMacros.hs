@@ -40,13 +40,13 @@ tnConT = ConT . tn
 tupleNewType :: Int -> Dec
 tupleNewType n = NewtypeD [] name [mkName "a"] tuple deriv
         where deriv = map mkName ["Show", "Eq", "Read", "Ord"]
-              name = tn n
+              name  = tn n
               tuple = NormalC name [(NotStrict, naryTupleType n "a")]
 
 --- Creates a tuple type of the form (a,...a)
 naryTupleType :: Int -> String -> Type
-naryTupleType n v | n <= 1 = undefined
-                  | otherwise = foldl AppT (TupleT n) (replicate n $ var v)
+naryTupleType n v | n <= 1      = undefined
+                  | otherwise  = foldl AppT (TupleT n) (replicate n $ var v)
 
 --- Functions named unTn that unbox the tuple inside of the Tn newtype
 unTn :: Int -> Dec
@@ -54,15 +54,21 @@ unTn n = FunD unTname [def]
      where def = Clause [tn n `ConP` [var "x"]] (NormalB $ var "x") []
            unTname = mkName $ "unT" ++ show n
 
+-- Helper to define a (<TypeClass> Tn).
+tnTypeClass :: String -> Int -> Type
 tnTypeClass s = (AppT $ con s) . tnConT
 
+
+tuplePattern :: [String] -> Pat
+tuplePattern vars = tn (length vars) `ConP` [TupP $ map var vars]
+
+-- Defines the functor instance for the Tn type
 functorTnInstance :: Int -> Dec
 functorTnInstance n = InstanceD [] (tnTypeClass "Functor" n) [fmapN]
           where fmapN = mkName "fmap" `FunD` [def]
-                def = Clause [var "f", tuplePattern] (NormalB body) []
+                def = Clause [var "f", tuplePattern vars] (NormalB body) []
                 vars = ['a' : show x | x <- [1..n]]
                 body = ConE (tn n) `AppE` (TupE $ map ((var "f" `AppE`) . var) vars)
-                tuplePattern = tn n `ConP` [TupP $ map var vars]
 
 tupleTnInstance :: Int -> Dec
 tupleTnInstance n = InstanceD [] type' [t, unT]
@@ -73,7 +79,11 @@ tupleTnInstance n = InstanceD [] type' [t, unT]
                       unT = mkName "unT" `FunD` [clause . var $ "unT" ++ show n]
 
 appTnInstance :: Int -> Dec
-appTnInstance n = InstanceD [] type' [pureN]
+appTnInstance n = InstanceD [] type' [pureN, star]
               where type' = tnTypeClass "Applicative" n
-                    pureN = mkName "pure" `FunD` [Clause [var "a"] (NormalB body) []]
-                    body  = ConE (tn n) `AppE` (TupE . replicate n $ var "a")
+                    pureN = mkName "pure" `FunD` [Clause [var "a"] (NormalB pureNBody) []]
+                    pureNBody  = ConE (tn n) `AppE` (TupE . replicate n $ var "a")
+                    star  = mkName "<*>" `FunD` [Clause starPattern (NormalB starBody) []]
+                    (f, a) = unzip [('f': show x, 'a': show x) | x <- [1..n]]
+                    starPattern = [tuplePattern f, tuplePattern a]
+                    starBody = ConE (tn n) `AppE` (TupE $ zipWith (\ x y -> var x `AppE` var y) f a)
