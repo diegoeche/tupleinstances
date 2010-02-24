@@ -1,3 +1,4 @@
+Cabal-Version:       >= 1.2
 name:                tupleinstances
 version:             0.0
 synopsis:            Functor, Applicative and Monad for n-ary tuples.
@@ -10,3 +11,9 @@ maintainer:          diegoeche@gmail.com
 build-depends:       base
 build-type:          Simple
 
+
+Library
+        hs-source-dirs:         src
+        Exposed-modules:        Data.Tuple.Instances
+        ghc-options:            -W
+        Build-Depends:          base >= 3, template-haskell == 2.3.0.1

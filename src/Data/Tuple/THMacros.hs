@@ -1,7 +1,8 @@
 -- {-# LANGUAGE FlexibleInstances #-}
-module THMacros where
+module Data.Tuple.THMacros where
 
 import Language.Haskell.TH.Syntax
+import Data.Function
 
 -- Helpful class to create variables of the different syntax
 -- elements
@@ -33,6 +34,7 @@ instance Constructor Type where
 tn :: Int -> Name
 tn = mkName . ('T':) . show
 
+tnConT :: Int -> Type
 tnConT = ConT . tn
 
 --- Creates a newtype of the form:
@@ -70,6 +72,7 @@ functorTnInstance n = InstanceD [] (tnTypeClass "Functor" n) [fmapN]
                 vars = ['a' : show x | x <- [1..n]]
                 body = ConE (tn n) `AppE` (TupE $ map ((var "f" `AppE`) . var) vars)
 
+-- Defines the T instance for the Tn type
 tupleTnInstance :: Int -> Dec
 tupleTnInstance n = InstanceD [] type' [t, unT]
                 where type' = con "T" `AppT` ta `AppT` naryTupleType n "a"
@@ -78,6 +81,7 @@ tupleTnInstance n = InstanceD [] type' [t, unT]
                       t   = mkName "t"   `FunD` [clause $ ConE (tn n)]
                       unT = mkName "unT" `FunD` [clause . var $ "unT" ++ show n]
 
+-- Defines the applicative instance for the Tn type
 appTnInstance :: Int -> Dec
 appTnInstance n = InstanceD [] type' [pureN, star]
               where type' = tnTypeClass "Applicative" n
@@ -86,4 +90,13 @@ appTnInstance n = InstanceD [] type' [pureN, star]
                     star  = mkName "<*>" `FunD` [Clause starPattern (NormalB starBody) []]
                     (f, a) = unzip [('f': show x, 'a': show x) | x <- [1..n]]
                     starPattern = [tuplePattern f, tuplePattern a]
-                    starBody = ConE (tn n) `AppE` (TupE $ zipWith (\ x y -> var x `AppE` var y) f a)
+                    starBody = ConE (tn n) `AppE` (TupE $ zipWith (AppE `on` var) f a)
+
+foldTnInstance :: Int -> Dec
+foldTnInstance n = InstanceD [] type' [foldr']
+              where type' = tnTypeClass "Foldable" n
+                    as = ['a': show x | x <- [1..n]]
+                    foldr' = mkName "foldr" `FunD` [Clause pattern (NormalB foldrBody) []]
+                    pattern = [var "f", var "b", tuplePattern as]
+                    foldrBody  = foldr f (var "b") as
+                               where f = (\ x y -> var "f" `AppE` x `AppE` y) . var
