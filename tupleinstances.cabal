@@ -15,5 +15,6 @@ build-type:          Simple
 Library
         hs-source-dirs:         src
         Exposed-modules:        Data.Tuple.Instances
+        Other-Modules:          Data.Tuple.THMacros
         ghc-options:            -W
         Build-Depends:          base >= 3, template-haskell == 2.3.0.1

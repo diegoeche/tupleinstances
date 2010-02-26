@@ -92,11 +92,29 @@ appTnInstance n = InstanceD [] type' [pureN, star]
                     starPattern = [tuplePattern f, tuplePattern a]
                     starBody = ConE (tn n) `AppE` (TupE $ zipWith (AppE `on` var) f a)
 
+liftBin :: String -> Exp -> Exp -> Exp
+liftBin f x y = var f `AppE` x `AppE` y
+
 foldTnInstance :: Int -> Dec
 foldTnInstance n = InstanceD [] type' [foldr']
               where type' = tnTypeClass "Foldable" n
                     as = ['a': show x | x <- [1..n]]
                     foldr' = mkName "foldr" `FunD` [Clause pattern (NormalB foldrBody) []]
                     pattern = [var "f", var "b", tuplePattern as]
-                    foldrBody  = foldr f (var "b") as
-                               where f = (\ x y -> var "f" `AppE` x `AppE` y) . var
+                    foldrBody  = foldr (liftBin "f" . var) (var "b") as
+
+
+-- instance Traversable T2 where
+--          traverse f (T2 (a1,a2)) =  (app <$> (f a1)) <*> (f a2)
+--                   where app = (T2 .) . (,)
+
+travTnInstance :: Int -> Dec
+travTnInstance n = InstanceD [] type' [traverse]
+              where type' = tnTypeClass "Traversable" n
+                    as = ['a': show x | x <- [1..n]]
+                    traverse = mkName "traverse" `FunD` [Clause pattern (NormalB travBody) []]
+                    pattern  = [var "f", tuplePattern as]
+                    travBody =
+                             let fa:fas = [var "f" `AppE` var a | a <- as]
+                             in foldl1 (liftBin "<*>") $ (liftBin "<$>" lambda fa):fas
+                    lambda = LamE (map var as) $ ConE (tn n) `AppE` (TupE $ map var as)

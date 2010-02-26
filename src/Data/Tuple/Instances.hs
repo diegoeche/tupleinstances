@@ -8,6 +8,7 @@ module Data.Tuple.Instances where
 import Data.Tuple.THMacros
 import Control.Applicative
 import Data.Foldable
+import Data.Traversable
 
 class T a b | a -> b,  b -> a where
       unT   :: a -> b
@@ -21,6 +22,7 @@ $(return $ do
               functorTnInstance,
               tupleTnInstance,
               appTnInstance,
-              foldTnInstance]
+              foldTnInstance,
+              travTnInstance]
          return $ f n)
 
