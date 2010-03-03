@@ -1,1 +1,39 @@
+Author: Diego Echeverri
+
+The following library implements instances for Functor, Applicative, Foldable and
+Traversable for tuples of the form (a,...a) using Template Haskell.
+
+The following are some examples of things you can do using this library:
+
+--------------------------------------------------
+
+In order to implement the instances we use the newtype T<N> where N is the arity of
+the tuple we want to use
+
+
+-- Wraps the tuple into T3 and applies the increment function
+example1 = unT3 . fmap (+1) $ T3 (1,2,3)
+-- > Result: (2,3.4)
+
+-- We can use the T typeclass to wrap and unwrap the tuples. That requires an extra
+-- type anotation
+example2 :: (Num a) => (a, a, a)
+example2 = unT . fmap (+1) $ t (1,2,3)
+-- > Result: (2,3,4)
+
+-- Is possible to avoid the type annotation by using only one explicit boxing
+example3 = unT . fmap (+1) $ T10 (1,2,3,4,5,6,7,8,9,10)
+example4 = unT10 . fmap (+1) $ t (1,2,3,4,5,6,7,8,9,10)
+-- > Result: (2,3,4,5,6,7,8,9,10,11)
+
+-- The following shows the support for applicative and Foldable:
+example5 = F.sum (pure 6 :: T3 Int)
+-- > Result: 18
+
+-- A more complex example shows how to calculate the adjacent positions
+-- For example you can use this for board games.
+example6 :: (Int, Int) -> [(Int, Int)]
+example6 p = map unT $ liftA2 (+) (T2 p) <$> moves
+         where moves = tail $ traverse (\x -> [0,x+1,x-1]) (pure 0 :: T2 Int)
+-- > Result with (1,1): [(1,2),(1,0),(2,1),(2,2),(2,0),(0,1),(0,2),(0,0)]
 
