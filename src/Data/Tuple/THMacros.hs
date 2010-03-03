@@ -60,7 +60,7 @@ unTn n = FunD unTname [def]
 tnTypeClass :: String -> Int -> Type
 tnTypeClass s = (AppT $ con s) . tnConT
 
-
+-- Creates a pattern for the tn type with the given variables.
 tuplePattern :: [String] -> Pat
 tuplePattern vars = tn (length vars) `ConP` [TupP $ map var vars]
 
@@ -95,6 +95,7 @@ appTnInstance n = InstanceD [] type' [pureN, star]
 liftBin :: String -> Exp -> Exp -> Exp
 liftBin f x y = var f `AppE` x `AppE` y
 
+-- Defines the Foldable instance for the Tn type
 foldTnInstance :: Int -> Dec
 foldTnInstance n = InstanceD [] type' [foldr']
               where type' = tnTypeClass "Foldable" n
@@ -104,10 +105,7 @@ foldTnInstance n = InstanceD [] type' [foldr']
                     foldrBody  = foldr (liftBin "f" . var) (var "b") as
 
 
--- instance Traversable T2 where
---          traverse f (T2 (a1,a2)) =  (app <$> (f a1)) <*> (f a2)
---                   where app = (T2 .) . (,)
-
+-- Defines the Traversable instance for the Tn type
 travTnInstance :: Int -> Dec
 travTnInstance n = InstanceD [] type' [traverse]
               where type' = tnTypeClass "Traversable" n
@@ -116,5 +114,5 @@ travTnInstance n = InstanceD [] type' [traverse]
                     pattern  = [var "f", tuplePattern as]
                     travBody =
                              let fa:fas = [var "f" `AppE` var a | a <- as]
-                             in foldl1 (liftBin "<*>") $ (liftBin "<$>" lambda fa):fas
+                             in foldl1 (liftBin "<*>") $ (liftBin "<$>" lambda fa) : fas
                     lambda = LamE (map var as) $ ConE (tn n) `AppE` (TupE $ map var as)

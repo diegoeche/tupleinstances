@@ -1,6 +1,6 @@
 Cabal-Version:       >= 1.2
 name:                tupleinstances
-version:             0.0
+version:             0.01
 synopsis:            Functor, Applicative and Monad for n-ary tuples.
 description:         Functor, Applicative and Monad for n-ary tuples.
 category:            Data
@@ -11,6 +11,9 @@ maintainer:          diegoeche@gmail.com
 build-depends:       base
 build-type:          Simple
 
+source-repository    head
+  type:              git
+  location:          git://github.com/diegoeche/tupleinstances.git
 
 Library
         hs-source-dirs:         src
